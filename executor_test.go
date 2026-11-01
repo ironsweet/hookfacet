@@ -2,6 +2,7 @@ package hookfacet
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -110,6 +111,7 @@ func TestTimeoutPerFailureMode(t *testing.T) {
 		{name: "fail closed", failureMode: FailClosed, expectBlock: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			var sleepDone atomic.Bool
 			fakeHandler := &stubHandler{
 				mode:        ModeDecide,
 				failureMode: tc.failureMode,
@@ -117,6 +119,7 @@ func TestTimeoutPerFailureMode(t *testing.T) {
 				onEvent: func(ctx context.Context, ev Event, st *State) (Decision, error) {
 					select {
 					case <-time.After(500 * time.Millisecond):
+						sleepDone.Store(true)
 						return Allow(), nil
 					case <-ctx.Done():
 						return Allow(), ctx.Err()
@@ -130,6 +133,7 @@ func TestTimeoutPerFailureMode(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectBlock, d.Block)
 			assert.Less(t, elapsed, 50*time.Millisecond)
+			assert.False(t, sleepDone.Load(), "onEvent should not have completed")
 		})
 	}
 }
