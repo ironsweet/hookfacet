@@ -39,10 +39,15 @@ func TestReadPriority(t *testing.T) {
 	assert.Equal(t, 1, v3)
 }
 
+type MyType struct {
+	Value string
+}
+
 func TestTypeAsKey(t *testing.T) {
 	root := NewSessionState()
 	Set(root, 42)
 	Set(root, "hi")
+	Set(root, MyType{Value: "hello"})
 
 	v, ok := Get[int](root)
 	assert.True(t, ok)
@@ -55,6 +60,10 @@ func TestTypeAsKey(t *testing.T) {
 	v3, ok3 := Get[bool](root)
 	assert.False(t, ok3)
 	assert.False(t, v3)
+
+	v4, ok4 := Get[MyType](root)
+	assert.True(t, ok4)
+	assert.Equal(t, MyType{Value: "hello"}, v4)
 }
 
 func TestNilSafe(t *testing.T) {
