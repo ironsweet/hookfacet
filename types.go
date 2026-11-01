@@ -8,12 +8,39 @@ import (
 type EventKind string
 
 const (
-	KindUserInput EventKind = "user_input"
-	KindTurnEnd   EventKind = "turn_end"
+	KindUserInput  EventKind = "user_input"
+	KindToolResult EventKind = "tool_result"
+	KindTurnEnd    EventKind = "turn_end"
 )
 
+type Payload struct {
+	// UserPromptSubmit
+	Prompt string `json:"prompt,omitempty"`
+
+	// PreToolUse
+	ToolName  string `json:"tool_name,omitempty"`
+	ToolInput *struct {
+		FilePath string `json:"file_path,omitempty"`
+		Content  string `json:"content,omitempty"`
+	} `json:"tool_input,omitempty"`
+	ToolUseId string `json:"tool_use_id,omitempty"`
+	// PostToolUse
+	ToolResponse *struct {
+		FilePath string `json:"file_path,omitempty"`
+		Content  string `json:"content,omitempty"`
+	} `json:"tool_response,omitempty"`
+
+	// Stop
+	StopHookActive       bool   `json:"stop_hook_active,omitempty"`
+	LastAssistantMessage string `json:"last_assistant_message,omitempty"`
+}
+
 type Event struct {
-	Kind EventKind
+	SessionID string `json:"session_id,omitempty"`
+	TurnID    string `json:"turn_id,omitempty"`
+
+	Kind    EventKind
+	Payload Payload
 }
 
 type HookMode string
