@@ -51,6 +51,10 @@ func TestTypeAsKey(t *testing.T) {
 	v2, ok2 := Get[string](root)
 	assert.True(t, ok2)
 	assert.Equal(t, "hi", v2)
+
+	v3, ok3 := Get[bool](root)
+	assert.False(t, ok3)
+	assert.False(t, v3)
 }
 
 func TestNilSafe(t *testing.T) {
@@ -61,7 +65,7 @@ func TestNilSafe(t *testing.T) {
 	Set[int](nil, 1) // no panic
 }
 
-func TestNoContention(t *testing.T) {
+func TestRaceSafe(t *testing.T) {
 	root := NewSessionState()
 	Set(root, 42)
 	child := NewChildState(root)
@@ -71,7 +75,7 @@ func TestNoContention(t *testing.T) {
 	for range 10 {
 		wg.Go(func() {
 			for range 10 {
-				_, ok := Get[int](root)
+				_, ok := Get[int](child)
 				assert.True(t, ok)
 			}
 		})
@@ -100,5 +104,6 @@ func TestNoContention(t *testing.T) {
 			}
 		})
 	}
+
 	wg.Wait()
 }
