@@ -82,6 +82,9 @@ func TestEOFSemantics(t *testing.T) {
 		{name: "bad length", payload: append(hdr[:], 0x01, 0x02), assert: func(t *testing.T, err error) {
 			assert.ErrorIs(t, err, io.ErrUnexpectedEOF)
 		}},
+		{name: "no payload", payload: hdr[:], assert: func(t *testing.T, err error) {
+			assert.ErrorIs(t, err, io.ErrUnexpectedEOF)
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := Decode(bytes.NewReader(tc.payload))
