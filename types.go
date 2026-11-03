@@ -36,11 +36,11 @@ type Payload struct {
 }
 
 type Event struct {
-	SessionID string `json:"session_id,omitempty"`
+	SessionID string `json:"session_id"`
 	TurnID    string `json:"turn_id,omitempty"`
 
-	Kind    EventKind
-	Payload Payload
+	Kind    EventKind `json:"kind"`
+	Payload Payload   `json:"payload"`
 }
 
 type HookMode string
@@ -58,8 +58,8 @@ const (
 )
 
 type Decision struct {
-	Block  bool
-	Reason string
+	Block  bool   `json:"block,omitempty"`
+	Reason string `json:"reason,omitempty"`
 }
 
 func Allow() Decision         { return Decision{} }
