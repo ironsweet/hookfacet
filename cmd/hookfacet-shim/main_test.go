@@ -13,10 +13,36 @@ import (
 
 const inputData = `{
   "session_id": "abc123",
-  "turn_id": "turn1",
-  "kind": "Stop",
+  "transcript_path": "~/.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
+  "cwd": "/Users/...",
+  "permission_mode": "default",
+  "hook_event_name": "Stop",
+  "stop_hook_active": true,
+  "last_assistant_message": "I've completed the refactoring. Here's a summary...",
+  "background_tasks": [
+    {
+      "id": "task-001",
+      "type": "shell",
+      "status": "running",
+      "description": "tail logs",
+      "command": "tail -f /var/log/syslog"
+    }
+  ],
+  "session_crons": [
+    {
+      "id": "cron-001",
+      "schedule": "0 9 * * 1-5",
+      "recurring": true,
+      "prompt": "check the build"
+    }
+  ]
+}`
+
+const normalizedInputData = `{
+  "session_id": "abc123",
+  "kind": "turn_end",
   "payload": {
-    "stop_hook_active": true,
+    "stop_hook_active":true,
     "last_assistant_message": "I've completed the refactoring. Here's a summary..."
   }
 }`
@@ -41,7 +67,7 @@ func TestDaemonReturnBlock(t *testing.T) {
 			daemonErr <- err
 			return
 		}
-		assert.Equal(t, inputData, string(evBuf))
+		assert.JSONEq(t, normalizedInputData, string(evBuf))
 
 		err = wire.Encode(conn, []byte(`{"block":true,"reason":"intent not satisfied"}`))
 		if err != nil {
@@ -111,7 +137,7 @@ func TestDaemonReturnNonBlock(t *testing.T) {
 			daemonErr <- err
 			return
 		}
-		assert.Equal(t, inputData, string(evBuf))
+		assert.JSONEq(t, normalizedInputData, string(evBuf))
 
 		err = wire.Encode(conn, []byte(`{"block":false}`))
 		if err != nil {
@@ -158,7 +184,7 @@ func TestDaemonReturnTimeout(t *testing.T) {
 			daemonErr <- err
 			return
 		}
-		assert.Equal(t, inputData, string(evBuf))
+		assert.JSONEq(t, normalizedInputData, string(evBuf))
 
 		_ = conn.SetDeadline(time.Now().Add(time.Second))
 		_, _ = conn.Read(make([]byte, 1)) // simulate a read timeout
