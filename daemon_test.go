@@ -2,6 +2,8 @@ package hookfacet
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"net"
 	"path/filepath"
 	"testing"
@@ -27,23 +29,24 @@ func TestOneCompleteConnection(t *testing.T) {
 		},
 	})
 
-	connErr := make(chan error, 1)
+	done := make(chan struct{})
 	go func() {
-		connErr <- handleConn(ctx, server, runner)
+		handleConn(ctx, server, runner, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		close(done)
 	}()
 
 	assert.NoError(t, wire.Encode(client, []byte(sampleEventJSON)))
 	buf, err := wire.Decode(client)
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{"block":true,"reason":"not satisfied"}`, string(buf))
-	assert.NoError(t, <-connErr)
+	<-done
 }
 
 func TestErrorHandling(t *testing.T) {
 	server, client := net.Pipe()
 	ctx := t.Context()
 	runner := NewRunner(&stubHandler{
-		mode:        ModeDecide,
+		mode:        ModeInspect,
 		failureMode: FailOpen,
 		timeout:     30 * time.Second,
 		onEvent: func(ctx context.Context, ev Event, st *State) (Decision, error) {
@@ -51,16 +54,17 @@ func TestErrorHandling(t *testing.T) {
 		},
 	})
 
-	connErr := make(chan error, 1)
+	done := make(chan struct{})
 	go func() {
-		connErr <- handleConn(ctx, server, runner)
+		handleConn(ctx, server, runner, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		close(done)
 	}()
 
 	assert.NoError(t, wire.Encode(client, []byte(sampleEventJSON)))
 	buf, err := wire.Decode(client)
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{}`, string(buf))
-	assert.NoError(t, <-connErr)
+	<-done
 }
 
 func TestContextCancel(t *testing.T) {
@@ -78,7 +82,7 @@ func TestContextCancel(t *testing.T) {
 			onEvent: func(ctx context.Context, ev Event, st *State) (Decision, error) {
 				return Allow(), nil
 			},
-		}))
+		}), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	}()
 
 	var conn net.Conn
