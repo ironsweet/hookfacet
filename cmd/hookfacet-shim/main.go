@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -23,7 +24,7 @@ func main() {
 }
 
 type Harness interface {
-	Read(r io.Reader) (*hookfacet.Event, error)
+	Read(r io.Reader) (hookfacet.Event, error)
 	Write(w io.Writer, ev hookfacet.Decision) error
 }
 
@@ -155,15 +156,15 @@ type ClaudeCodeDecision struct {
 type ClaudeCode struct {
 }
 
-func (c *ClaudeCode) Read(r io.Reader) (*hookfacet.Event, error) {
+func (c *ClaudeCode) Read(r io.Reader) (hookfacet.Event, error) {
 	var hookInput ClaudeCodeHookInput
 	err := json.NewDecoder(r).Decode(&hookInput)
 	if err != nil {
-		return nil, err
+		return hookfacet.Event{}, err
 	}
 	switch hookInput.HookEventName {
 	case "UserPromptSubmit":
-		return &hookfacet.Event{
+		return hookfacet.Event{
 			SessionID: hookInput.SessionID,
 			TurnID:    hookInput.PromptID,
 			Kind:      hookfacet.KindUserInput,
@@ -172,7 +173,7 @@ func (c *ClaudeCode) Read(r io.Reader) (*hookfacet.Event, error) {
 			},
 		}, nil
 	case "PostToolUse":
-		return &hookfacet.Event{
+		return hookfacet.Event{
 			SessionID: hookInput.SessionID,
 			TurnID:    hookInput.ToolUseId,
 			Kind:      hookfacet.KindToolResult,
@@ -184,7 +185,7 @@ func (c *ClaudeCode) Read(r io.Reader) (*hookfacet.Event, error) {
 			},
 		}, nil
 	case "Stop":
-		return &hookfacet.Event{
+		return hookfacet.Event{
 			SessionID: hookInput.SessionID,
 			TurnID:    hookInput.PromptID,
 			Kind:      hookfacet.KindTurnEnd,
@@ -194,7 +195,7 @@ func (c *ClaudeCode) Read(r io.Reader) (*hookfacet.Event, error) {
 			},
 		}, nil
 	default:
-		return nil, nil
+		return hookfacet.Event{}, fmt.Errorf("unsupported hook event: %s", hookInput.HookEventName)
 	}
 }
 
