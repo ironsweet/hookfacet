@@ -34,17 +34,11 @@ type ClaudeCodeHookInput struct {
 	Prompt string `json:"prompt,omitempty"`
 
 	// PreToolUse
-	ToolName  string `json:"tool_name,omitempty"`
-	ToolInput *struct {
-		FilePath string `json:"file_path,omitempty"`
-		Content  string `json:"content,omitempty"`
-	} `json:"tool_input,omitempty"`
-	ToolUseId string `json:"tool_use_id,omitempty"`
+	ToolName  string          `json:"tool_name,omitempty"`
+	ToolInput json.RawMessage `json:"tool_input,omitempty"`
+	ToolUseID string          `json:"tool_use_id,omitempty"`
 	// PostToolUse
-	ToolResponse *struct {
-		FilePath string `json:"file_path,omitempty"`
-		Content  string `json:"content,omitempty"`
-	} `json:"tool_response,omitempty"`
+	ToolResponse json.RawMessage `json:"tool_response,omitempty"`
 
 	// Stop
 	StopHookActive       bool   `json:"stop_hook_active,omitempty"`
@@ -78,12 +72,12 @@ func (c *ClaudeCode) Read(r io.Reader) (hookfacet.Event, error) {
 	case "PostToolUse":
 		return hookfacet.Event{
 			SessionID: hookInput.SessionID,
-			TurnID:    hookInput.ToolUseId,
+			TurnID:    hookInput.PromptID,
 			Kind:      hookfacet.KindToolResult,
 			Payload: hookfacet.Payload{
 				ToolName:     hookInput.ToolName,
 				ToolInput:    hookInput.ToolInput,
-				ToolUseId:    hookInput.ToolUseId,
+				ToolUseID:    hookInput.ToolUseID,
 				ToolResponse: hookInput.ToolResponse,
 			},
 		}, nil
