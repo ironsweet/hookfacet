@@ -11,27 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type statefulStub struct {
-	modeFn  func(EventKind) HookMode
-	onEvent func(ctx context.Context, ev Event, st *State) (Decision, error)
-}
-
-func (r *statefulStub) Mode(kind EventKind) HookMode { return r.modeFn(kind) }
-func (r *statefulStub) FailureMode() FailureMode     { return FailClosed }
-func (r *statefulStub) Timeout() time.Duration       { return 30 * time.Second }
-func (r *statefulStub) OnEvent(ctx context.Context, ev Event, st *State) (Decision, error) {
-	return r.onEvent(ctx, ev, st)
-}
-
-var _ Handler = (*statefulStub)(nil)
-
 func TestCrossEventStateAggregation(t *testing.T) {
 	type round struct {
 		userMessage string
 		toolCalls   []string
 	}
 
-	fakeHandler := &statefulStub{
+	fakeHandler := &stubHandler{
 		modeFn: func(kind EventKind) HookMode {
 			switch kind {
 			case KindTurnEnd:
@@ -40,6 +26,8 @@ func TestCrossEventStateAggregation(t *testing.T) {
 				return ModeInspect
 			}
 		},
+		failureMode: FailClosed,
+		timeout:     30 * time.Second,
 	}
 	fakeHandler.onEvent = func(ctx context.Context, ev Event, st *State) (Decision, error) {
 		switch ev.Kind {
@@ -84,8 +72,10 @@ func TestCrossEventStateAggregation(t *testing.T) {
 }
 
 func TestSessionIsolation(t *testing.T) {
-	fakeHandler := &statefulStub{
-		modeFn: func(kind EventKind) HookMode { return ModeInspect },
+	fakeHandler := &stubHandler{
+		modeFn:      func(kind EventKind) HookMode { return ModeInspect },
+		failureMode: FailClosed,
+		timeout:     30 * time.Second,
 		onEvent: func(ctx context.Context, ev Event, st *State) (Decision, error) {
 			switch ev.Kind {
 			case KindUserInput:
@@ -109,8 +99,10 @@ func TestSessionIsolation(t *testing.T) {
 }
 
 func TestConcurrentSession(t *testing.T) {
-	fakeHandler := &statefulStub{
-		modeFn: func(kind EventKind) HookMode { return ModeInspect },
+	fakeHandler := &stubHandler{
+		modeFn:      func(kind EventKind) HookMode { return ModeInspect },
+		failureMode: FailClosed,
+		timeout:     30 * time.Second,
 		onEvent: func(ctx context.Context, ev Event, st *State) (Decision, error) {
 			switch ev.Kind {
 			case KindUserInput:
