@@ -15,17 +15,13 @@ const (
 )
 
 type Payload struct {
-	// UserPromptSubmit
 	Prompt string `json:"prompt,omitempty"`
 
-	// PreToolUse
-	ToolName  string          `json:"tool_name,omitempty"`
-	ToolInput json.RawMessage `json:"tool_input,omitempty"`
-	ToolUseID string          `json:"tool_use_id,omitempty"`
-	// PostToolUse
+	ToolName     string          `json:"tool_name,omitempty"`
+	ToolInput    json.RawMessage `json:"tool_input,omitempty"`
+	ToolUseID    string          `json:"tool_use_id,omitempty"`
 	ToolResponse json.RawMessage `json:"tool_response,omitempty"`
 
-	// Stop
 	StopHookActive       bool   `json:"stop_hook_active,omitempty"`
 	LastAssistantMessage string `json:"last_assistant_message,omitempty"`
 }
