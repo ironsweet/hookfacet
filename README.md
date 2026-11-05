@@ -19,7 +19,7 @@ See [Design Notes](#design-notes) for the trade-offs behind this design.
 
 ```mermaid
 flowchart TB
-    subgraph Harness["Harness(Claude Code / Cursor / Codex)"]
+    subgraph Harness["Harness (Claude Code / Cursor / Codex)"]
         HK["hooks.json<br/>command hook"]
     end
 
@@ -152,6 +152,8 @@ func (h *Handler) Timeout() time.Duration             { return 5 * time.Second }
 func (h *Handler) OnEvent(ctx context.Context, ev hookfacet.Event, st *hookfacet.State) (hookfacet.Decision, error) {
 	switch ev.Kind {
 	case hookfacet.KindToolResult:
+		// Production code suggests using a typed struct (type toolCalls struct{ n int }) as key
+		// to avoid collisions of multiple int counters.
 		n, _ := hookfacet.Get[int](st)
 		hookfacet.Set(st, n+1) // cross-event accumulation, no need to manage your own state
 	case hookfacet.KindTurnEnd:
@@ -166,8 +168,23 @@ func (h *Handler) OnEvent(ctx context.Context, ev hookfacet.Event, st *hookfacet
 2. Start a daemon
 
 ```go
-logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
-hookfacet.Serve(ctx, "/tmp/my.sock", hookfacet.NewRunner(&Handler{}), logger)
+package mymodule
+
+import (
+	"context"
+	"log/slog"
+	"os"
+
+	"github.com/ironsweet/hookfacet"
+)
+
+// Handler is defined in the previous step
+
+func main() {
+	ctx := context.Background()
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	hookfacet.Serve(ctx, "/tmp/my.sock", hookfacet.NewRunner(&Handler{}), logger)
+}
 ```
 
 3. Configure your agent
@@ -197,9 +214,8 @@ This is chosen because path A is how off-the-shelf agent products like Claude Co
 built. Path B is how my own agent can use the same capability without the overhead of IPC. Path C is actually reserved 
 for capability extension.
 
-I researched many different hook frameworks, but still Claude Code event protocol is chosen as the de-facto
-standard, and they share the same JSON-in/JSON-out shape but differ in event names, which is why we abstracted 
-`EventKind` into a normalized enum.
+I researched several hook frameworks and chose Claude Code's event protocol as the de-facto standard. They share the
+same JSON-in/JSON-out shape but differ in event names, which is why `EventKind` is abstracted into a normalized enum.
 
 LLM and Agent runtime APIs are intentionally out of scope. Most capabilities need access to a full agent run API
 (like Claude Code's `prompt` hook but with more flexibility), which belongs to the module, not to a hook contract 
@@ -207,7 +223,7 @@ library. See [Not Included](#not-included) for the full boundary.
 
 ## Not Included
 
-- **LLM/ Agent runtime abstraction**: modules manage their own LLM access.
+- **LLM / Agent runtime abstraction**: modules manage their own LLM access.
 - **HTTP hook**: only Claude Code and Copilot CLI support it natively; Cursor and Codex do not. `command` hook is the   
   only fully cross-harness path.
 - **Non-Claude-Code adapters**: `Cursor` and `Codex` adapters are planned, not included in v0.
