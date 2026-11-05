@@ -44,7 +44,9 @@ const (
 type FailureMode string
 
 const (
-	FailOpen   FailureMode = "fail_open"
+	// FailOpen allows the action to proceed if the hook fails (e.g., timeout, error).
+	FailOpen FailureMode = "fail_open"
+	// FailClosed blocks the action if the hook fails (e.g., timeout, error).
 	FailClosed FailureMode = "fail_closed"
 )
 
