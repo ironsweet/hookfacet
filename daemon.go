@@ -83,4 +83,9 @@ func handleConn(ctx context.Context, conn net.Conn, runner *Runner, logger *slog
 		logger.Error("Failed to encode decision", "error", err)
 		return
 	}
+
+	logger.Debug("conn handled",
+		"sessionID", ev.SessionID,
+		"kind", ev.Kind,
+		"block", decision.Block)
 }
